@@ -71,3 +71,5 @@ Session.vim
 .netrwhist
 *~
 
+### Custom ###
+static/**/*.gz
