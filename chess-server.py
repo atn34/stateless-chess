@@ -82,7 +82,7 @@ game_template = bottle.SimpleTemplate('''
         <p> Black's turn. </p>
         % end
         <ul>
-            % for move in board.legal_moves:
+            % for move in sorted(x.uci() for x in board.legal_moves):
             <li><a href="/game/{{serial_game}}{{move}}">{{move}}</a></li>
             % end
         </ul>
