@@ -110,7 +110,6 @@ def game(serial_game=None):
 
 if __name__ == '__main__':
     arguments = docopt(__doc__)
-    print arguments
     if arguments['--debug']:
         app.run(host='localhost', debug=True, reloader=True,
                 port=int(arguments['--port']))
