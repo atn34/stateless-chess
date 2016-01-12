@@ -56,18 +56,7 @@ def index():
 </html>
 '''
 
-
-@app.route('/game')
-@app.route('/game/')
-@app.route('/game/<serial_game>')
-def game(serial_game=None):
-    if serial_game is None:
-        game = Game()
-        serial_game = ''
-    else:
-        game = Game.loads(serial_game)
-        serial_game += ','
-    return bottle.SimpleTemplate('''
+game_template = bottle.SimpleTemplate('''
 <!DOCTYPE html>
 <html>
     <head>
@@ -102,7 +91,19 @@ var board = ChessBoard('board', cfg);
 </script>
     </body>
 </html>
-''').render(
+''')
+
+@app.route('/game')
+@app.route('/game/')
+@app.route('/game/<serial_game>')
+def game(serial_game=None):
+    if serial_game is None:
+        game = Game()
+        serial_game = ''
+    else:
+        game = Game.loads(serial_game)
+        serial_game += ','
+    return game_template.render(
         board=game.board(),
         serial_game=serial_game,
     )
