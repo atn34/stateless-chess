@@ -1,0 +1,4 @@
+bottle==0.12.9
+futures==3.0.3
+python-chess==0.13.1
+wheel==0.24.0
