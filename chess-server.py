@@ -34,7 +34,10 @@ class Game(object):
 
 @app.route('/static/<path:path>')
 def static(path):
-    return bottle.static_file(path, root='static')
+    response = bottle.static_file(path, root='static')
+    response.set_header("Cache-Control", "public, max-age=3600")
+    return response
+
 
 @app.route('/')
 def index():
@@ -52,6 +55,7 @@ def index():
     </body>
 </html>
 '''
+
 
 @app.route('/game')
 @app.route('/game/')
@@ -107,7 +111,8 @@ if __name__ == '__main__':
     arguments = docopt(__doc__)
     print arguments
     if arguments['--debug']:
-        app.run(host='localhost', debug=True, reloader=True, port=int(arguments['--port']))
+        app.run(host='localhost', debug=True, reloader=True,
+                port=int(arguments['--port']))
     else:
         from paste import httpserver
         httpserver.serve(app, host='0.0.0.0', port=int(arguments['--port']))
