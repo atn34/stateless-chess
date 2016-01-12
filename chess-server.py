@@ -55,9 +55,11 @@ game_template = bottle.SimpleTemplate('''
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width">
         <link rel="stylesheet" type="text/css" href="/static/css/chessboard-0.3.0.min.css">
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7" crossorigin="anonymous">
     </head>
     <body>
-    <div id="board" style="width: 400px"></div>
+    <div class="container" style="max-width: 500px">
+    <div id="board" style="width: 100%"></div>
     % if board.is_game_over():
     <p> Game over! Result: {{board.result()}} </p>
     % else:
@@ -66,12 +68,13 @@ game_template = bottle.SimpleTemplate('''
         % else:
         <p> Black's turn. </p>
         % end
-        <ul>
+        <div class="list-group" style="text-align: center">
             % for (move, link) in moves:
-            <li><a href="/game/{{link}}">{{move}}</a></li>
+            <a href="/game/{{link}}" class="list-group-item">{{move}}</a>
             % end
-        </ul>
+        </div>
     % end
+    </div>
 <script src="//cdnjs.cloudflare.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
 <script type="text/javascript" src="/static/js/chessboard-0.3.0.min.js"></script>
 <script>
