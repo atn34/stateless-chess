@@ -1,0 +1,3 @@
+#!/bin/sh
+
+find static -type f | grep -v '^static/img' | xargs gzip -k

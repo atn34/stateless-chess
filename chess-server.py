@@ -32,8 +32,15 @@ class Game(object):
         return self._board
 
 
+def compressed_available(path):
+    """Keep up to date with bin/pre_compile"""
+    return not path.startswith('img')
+
+
 @app.route('/static/<path:path>')
 def static(path):
+    if compressed_available(path) and 'gzip' in bottle.request.headers.get('Accept-Encoding'):
+        path += '.gz'
     response = bottle.static_file(path, root='static')
     response.set_header("Cache-Control", "public, max-age=3600")
     return response
@@ -92,6 +99,7 @@ var board = ChessBoard('board', cfg);
     </body>
 </html>
 ''')
+
 
 @app.route('/game')
 @app.route('/game/')
