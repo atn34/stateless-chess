@@ -7,29 +7,9 @@ Usage: chess-server.py [--debug] [--port PORT]
 from docopt import docopt
 import bottle
 import chess
+import urllib
 
 app = bottle.Bottle()
-
-
-class Game(object):
-
-    def __init__(self, board=None):
-        if board is None:
-            board = chess.Board()
-        self._board = board
-
-    @staticmethod
-    def loads(serialized):
-        board = chess.Board()
-        for move in serialized.split(','):
-            board.push_uci(move)
-        return Game(board)
-
-    def dumps(self):
-        return ','.join(move.uci() for move in self._board.move_stack)
-
-    def board(self):
-        return self._board
 
 
 def compressed_available(path):
@@ -82,8 +62,8 @@ game_template = bottle.SimpleTemplate('''
         <p> Black's turn. </p>
         % end
         <ul>
-            % for move in sorted(x.uci() for x in board.legal_moves):
-            <li><a href="/game/{{serial_game}}{{move}}">{{move}}</a></li>
+            % for (move, link) in moves:
+            <li><a href="/game/{{link}}">{{move}}</a></li>
             % end
         </ul>
     % end
@@ -101,20 +81,22 @@ var board = ChessBoard('board', cfg);
 ''')
 
 
+def move_generator(board):
+    for move in sorted(board.legal_moves, key=lambda x: x.uci()):
+        board.push(move)
+        yield (move.uci(), urllib.quote(board.fen()))
+        board.pop()
+
+
 @app.route('/game')
 @app.route('/game/')
-@app.route('/game/<serial_game>')
+@app.route('/game/<serial_game:path>')
 def game(serial_game=None):
     if serial_game is None:
-        game = Game()
-        serial_game = ''
+        board = chess.Board()
     else:
-        game = Game.loads(serial_game)
-        serial_game += ','
-    return game_template.render(
-        board=game.board(),
-        serial_game=serial_game,
-    )
+        board = chess.Board(serial_game)
+    return game_template.render(board=board, moves=move_generator(board))
 
 if __name__ == '__main__':
     arguments = docopt(__doc__)
