@@ -26,7 +26,6 @@ def static(path):
     response.set_header('Cache-Control', 'public, max-age=3600')
     if gzip_available:
         response.set_header('Vary', 'Accept-Encoding')
-        print path
         if path.endswith('.gz'):
             response.set_header('Content-Encoding', 'gzip')
     return response
