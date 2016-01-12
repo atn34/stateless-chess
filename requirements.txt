@@ -1,4 +1,7 @@
 bottle==0.12.9
+docopt==0.6.2
 futures==3.0.3
+Paste==2.0.2
 python-chess==0.13.1
+six==1.10.0
 wheel==0.24.0

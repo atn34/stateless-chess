@@ -1,3 +1,10 @@
+"""Chess server.
+Usage: chess-server.py [--debug] [--port PORT]
+
+--port PORT  [default: 8080]
+--debug
+"""
+from docopt import docopt
 import bottle
 import chess
 
@@ -78,4 +85,11 @@ var board = ChessBoard('board', cfg);
         serial_game=serial_game,
     )
 
-app.run(host='localhost', debug=True, reloader=True)
+if __name__ == '__main__':
+    arguments = docopt(__doc__)
+    print arguments
+    if arguments['--debug']:
+        app.run(host='localhost', debug=True, reloader=True, port=int(arguments['--port']))
+    else:
+        from paste import httpserver
+        httpserver.serve(app, host='0.0.0.0', port=int(arguments['--port']))
