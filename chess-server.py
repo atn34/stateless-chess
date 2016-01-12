@@ -36,6 +36,22 @@ class Game(object):
 def static(path):
     return bottle.static_file(path, root='static')
 
+@app.route('/')
+def index():
+    return '''
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width">
+    </head>
+    <body>
+        Welcome to the stateless chess server! Start a game
+        <a href="/game">here</a>, and mail the links back and forth to a friend
+        to play chess by email!
+    </body>
+</html>
+'''
 
 @app.route('/game')
 @app.route('/game/')
@@ -47,8 +63,6 @@ def game(serial_game=None):
     else:
         game = Game.loads(serial_game)
         serial_game += ','
-    if game.board().is_game_over():
-        return game.board().result()
     return bottle.SimpleTemplate('''
 <!DOCTYPE html>
 <html>
@@ -58,7 +72,10 @@ def game(serial_game=None):
         <link rel="stylesheet" type="text/css" href="/static/css/chessboard-0.3.0.min.css">
     </head>
     <body>
-        <div id="board" style="width: 400px"></div>
+    <div id="board" style="width: 400px"></div>
+    % if board.is_game_over():
+    <p> Game over! Result: {{board.result()}} </p>
+    % else:
         % if board.turn:
         <p> White's turn. </p>
         % else:
@@ -69,6 +86,7 @@ def game(serial_game=None):
             <li><a href="/game/{{serial_game}}{{move}}">{{move}}</a></li>
             % end
         </ul>
+    % end
 <script src="//cdnjs.cloudflare.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
 <script type="text/javascript" src="/static/js/chessboard-0.3.0.min.js"></script>
 <script>
