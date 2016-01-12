@@ -19,10 +19,16 @@ def compressed_available(path):
 
 @app.route('/static/<path:path>')
 def static(path):
-    if compressed_available(path) and 'gzip' in bottle.request.headers.get('Accept-Encoding'):
+    gzip_available = compressed_available(path)
+    if gzip_available and 'gzip' in bottle.request.headers.get('Accept-Encoding', ''):
         path += '.gz'
     response = bottle.static_file(path, root='static')
-    response.set_header("Cache-Control", "public, max-age=3600")
+    response.set_header('Cache-Control', 'public, max-age=3600')
+    if gzip_available:
+        response.set_header('Vary', 'Accept-Encoding')
+        print path
+        if path.endswith('.gz'):
+            response.set_header('Content-Encoding', 'gzip')
     return response
 
 
