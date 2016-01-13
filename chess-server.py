@@ -63,11 +63,14 @@ game_template = bottle.SimpleTemplate('''
     % if board.is_game_over():
     <p> Game over! Result: {{board.result()}} </p>
     % else:
+        <p>
         % if board.turn:
-        <p> White's turn. </p>
+        White's
         % else:
-        <p> Black's turn. </p>
+        Black's
         % end
+        turn. Here are all legal moves. Click one.
+        </p>
         <div class="list-group" style="text-align: center">
             % for (move, link) in moves:
             <a href="/game/{{link}}" class="list-group-item">{{move}}</a>
