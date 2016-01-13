@@ -4,7 +4,6 @@ Usage: chess-server.py [--debug] [--port PORT]
 --port PORT  [default: 8080]
 --debug
 """
-from docopt import docopt
 import bottle
 import chess
 import urllib
@@ -131,6 +130,7 @@ def game(serial_game=None):
     return game_template.render(board=board, moves=move_generator(board))
 
 if __name__ == '__main__':
+    from docopt import docopt
     arguments = docopt(__doc__)
     if arguments['--debug']:
         app.run(host='localhost', debug=True, reloader=True,
