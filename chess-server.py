@@ -69,11 +69,11 @@ game_template = bottle.SimpleTemplate('''
         % else:
         Black's
         % end
-        turn. Here are all legal moves. Click one.
+        turn. Here are all legal moves. Click one, or drag pieces on the board.
         </p>
         <div class="list-group" style="text-align: center">
             % for (move, link) in moves:
-            <a href="/game/{{link}}" class="list-group-item">{{move}}</a>
+            <a href="{{link}}" class="list-group-item">{{move}}</a>
             % end
         </div>
     % end
@@ -84,6 +84,24 @@ game_template = bottle.SimpleTemplate('''
 var cfg = {
     pieceTheme: '/static/img/chesspieces/wikipedia/{piece}.png',
     position: '{{board.fen()}}',
+    draggable: true,
+    onDrop: function(start, end) {
+        var attempt = start + end;
+        % for (move, link) in moves:
+        % if move[-1] in map(str, xrange(1,9)):
+        if (attempt === '{{move}}') {
+            window.location.href = '{{link}}';
+            return '';
+        }
+        % else:
+        if (new RegExp('^' + attempt).test('{{move}}')) {
+            alert('For pawn promotions, please use buttons');
+            return 'snapback';
+        }
+        % end
+        % end
+        return 'snapback';
+    },
 };
 var board = ChessBoard('board', cfg); 
 </script>
@@ -93,10 +111,12 @@ var board = ChessBoard('board', cfg);
 
 
 def move_generator(board):
+    moves = []
     for move in sorted(board.legal_moves, key=lambda x: x.uci()):
         board.push(move)
-        yield (move.uci(), urllib.quote(board.fen()))
+        moves.append((move.uci(), '/game/' + urllib.quote(board.fen())))
         board.pop()
+    return moves
 
 
 @app.route('/game')
