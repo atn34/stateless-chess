@@ -58,7 +58,10 @@ game_template = bottle.SimpleTemplate('''
     </head>
     <body>
     <div class="container" style="max-width: 500px">
-    <div id="board" style="width: 100%"></div>
+    <div id="board" style="width: 100%; margin-bottom: 5px;"></div>
+    <button class="btn btn-primary btn-block" data-clipboard-text="{{current_url}}">
+    Copy url to clipboard
+    </button>
     % if board.is_game_over():
     <p> Game over! Result: {{board.result()}} </p>
     % else:
@@ -78,8 +81,10 @@ game_template = bottle.SimpleTemplate('''
     % end
     </div>
 <script src="//cdnjs.cloudflare.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
+<script src="//cdnjs.cloudflare.com/ajax/libs/clipboard.js/1.5.5/clipboard.min.js"></script>
 <script type="text/javascript" src="/static/js/chessboard-0.3.0.min.js"></script>
 <script>
+new Clipboard('.btn');
 var cfg = {
     pieceTheme: '/static/img/chesspieces/wikipedia/{piece}.png',
     position: '{{board.fen()}}',
@@ -127,7 +132,11 @@ def game(serial_game=None):
         bottle.response.set_header('Cache-Control', 'public, max-age=3600')
     else:
         board = chess.Board(serial_game)
-    return game_template.render(board=board, moves=move_generator(board))
+    return game_template.render(
+        board=board,
+        current_url=bottle.request.url,
+        moves=move_generator(board),
+    )
 
 if __name__ == '__main__':
     from docopt import docopt
