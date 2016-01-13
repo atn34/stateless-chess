@@ -47,73 +47,6 @@ def index():
 </html>
 '''
 
-game_template = bottle.SimpleTemplate('''
-<!DOCTYPE html>
-<html>
-    <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width">
-        <link rel="stylesheet" type="text/css" href="/static/css/chessboard-0.3.0.min.css">
-        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7" crossorigin="anonymous">
-    </head>
-    <body>
-    <div class="container" style="max-width: 500px">
-    <div id="board" style="width: 100%; margin-bottom: 5px;"></div>
-    <button class="btn btn-primary btn-block" data-clipboard-text="{{current_url}}">
-    Copy url to clipboard
-    </button>
-    % if board.is_game_over():
-    <p> Game over! Result: {{board.result()}} </p>
-    % else:
-        <p>
-        % if board.turn:
-        White's
-        % else:
-        Black's
-        % end
-        turn. Here are all legal moves. Click one, or drag pieces on the board.
-        </p>
-        <div class="list-group" style="text-align: center">
-            % for (move, link) in moves:
-            <a href="{{link}}" class="list-group-item">{{move}}</a>
-            % end
-        </div>
-    % end
-    </div>
-<script src="//cdnjs.cloudflare.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
-<script src="//cdnjs.cloudflare.com/ajax/libs/clipboard.js/1.5.5/clipboard.min.js"></script>
-<script type="text/javascript" src="/static/js/chessboard-0.3.0.min.js"></script>
-<script>
-new Clipboard('.btn');
-var cfg = {
-    pieceTheme: '/static/img/chesspieces/wikipedia/{piece}.png',
-    position: '{{board.fen()}}',
-    draggable: true,
-    onDrop: function(start, end) {
-        var attempt = start + end;
-        % for (move, link) in moves:
-        % if move[-1] in map(str, xrange(1,9)):
-        if (attempt === '{{move}}') {
-            window.location.href = '{{link}}';
-            return '';
-        }
-        % else:
-        if (new RegExp('^' + attempt).test('{{move}}')) {
-            alert('For pawn promotions, please use buttons');
-            return 'snapback';
-        }
-        % end
-        % end
-        return 'snapback';
-    },
-};
-var board = ChessBoard('board', cfg); 
-</script>
-    </body>
-</html>
-''')
-
-
 def move_generator(board):
     moves = []
     for move in sorted(board.legal_moves, key=lambda x: x.uci()):
@@ -126,13 +59,14 @@ def move_generator(board):
 @app.route('/game')
 @app.route('/game/')
 @app.route('/game/<serial_game:path>')
+@bottle.view('game.html')
 def game(serial_game=None):
     if serial_game is None:
         board = chess.Board()
         bottle.response.set_header('Cache-Control', 'public, max-age=3600')
     else:
         board = chess.Board(serial_game)
-    return game_template.render(
+    return dict(
         board=board,
         current_url=bottle.request.url,
         moves=move_generator(board),
