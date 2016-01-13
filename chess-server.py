@@ -105,6 +105,7 @@ def move_generator(board):
 def game(serial_game=None):
     if serial_game is None:
         board = chess.Board()
+        bottle.response.set_header('Cache-Control', 'public, max-age=3600')
     else:
         board = chess.Board(serial_game)
     return game_template.render(board=board, moves=move_generator(board))
