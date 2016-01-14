@@ -34,12 +34,28 @@
 <script src="//cdnjs.cloudflare.com/ajax/libs/clipboard.js/1.5.5/clipboard.min.js"></script>
 <script type="text/javascript" src="/static/js/chessboard-0.3.0.min.js"></script>
 <script>
+var removeGreySquares = function() {
+  $('#board .square-55d63').css('background', '');
+};
+
+var greySquare = function(square) {
+  var squareEl = $('#board .square-' + square);
+
+  var background = '#a9a9a9';
+  if (squareEl.hasClass('black-3c85d') === true) {
+    background = '#696969';
+  }
+
+  squareEl.css('background', background);
+};
+
 new Clipboard('.btn');
 var cfg = {
     pieceTheme: '/static/img/chesspieces/wikipedia/{piece}.png',
     position: '{{board.fen()}}',
     draggable: true,
     onDrop: function(start, end) {
+        removeGreySquares();
         var attempt = start + end;
         % for (move, link) in moves:
         % if move[-1] in map(str, xrange(1,9)):
@@ -55,6 +71,19 @@ var cfg = {
         % end
         % end
         return 'snapback';
+    },
+    onMouseoutSquare: function(square, piece) {
+        removeGreySquares();
+    },
+    onMouseoverSquare: function(square, piece) {
+        % for (move, _) in moves:
+        % source = move[:2]
+        % target = move[2:4]
+        if (square === '{{source}}') {
+          greySquare('{{source}}');
+          greySquare('{{target}}');
+        }
+        % end
     },
 };
 var board = ChessBoard('board', cfg); 
