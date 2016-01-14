@@ -17,11 +17,11 @@
     % else:
         <p>
         % if board.turn:
-        White's
+        White ({{white}})
         % else:
-        Black's
+        Black ({{black}})
         % end
-        turn. Here are all legal moves. Click one, or drag pieces on the board.
+        to move. Here are all legal moves. Click one, or drag pieces on the board.
         </p>
         <div class="list-group" style="text-align: center">
             % for (move, link) in moves:

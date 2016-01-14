@@ -39,24 +39,6 @@ def static(path):
     return response
 
 
-@app.route('/')
-def index():
-    return '''
-<!DOCTYPE html>
-<html>
-    <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width">
-    </head>
-    <body>
-        Welcome to the stateless chess server! Start a game
-        <a href="/game">here</a>, and mail the links back and forth to a friend
-        to play chess by email!
-    </body>
-</html>
-'''
-
-
 def trusted_digest(*args):
     h = hmac.new(secret)
     for arg in args:
@@ -64,39 +46,58 @@ def trusted_digest(*args):
     return h.hexdigest()
 
 
-def move_generator(board, game_uuid):
+@app.route('/')
+@bottle.view('index.html')
+def index():
+    return {}
+
+
+def mint_game_url(board, game_uuid, white, black):
+    serial_game = board.fen()
+    return '/' + '/'.join(map(urllib.quote, [
+        'game',
+        game_uuid,
+        white,
+        black,
+        trusted_digest(
+            game_uuid,
+            serial_game,
+            white,
+            black),
+        serial_game]))
+
+
+@app.post('/start')
+def start():
+    white = bottle.request.forms.get('white') or 'white'
+    black = bottle.request.forms.get('black') or 'black'
+    game_uuid = binascii.hexlify(os.urandom(UUID_LENGTH))
+    board = chess.Board()
+    bottle.redirect(mint_game_url(board, game_uuid, white, black))
+
+
+def move_generator(board, game_uuid, white, black):
     moves = []
     for move in sorted(board.legal_moves, key=lambda x: x.uci()):
         board.push(move)
         serial_game = board.fen()
-        moves.append((move.uci(), '/' + '/'.join([
-            'game',
-            game_uuid,
-            trusted_digest(
-                game_uuid,
-                serial_game),
-            urllib.quote(serial_game)])))
+        moves.append((move.uci(), mint_game_url(board, game_uuid, white, black)))
         board.pop()
     return moves
 
 
-@app.route('/game')
-@app.route('/game/')
-@app.route('/game/<game_uuid>/<digest>/<serial_game:path>')
+@app.route('/game/<game_uuid>/<white>/<black>/<digest>/<serial_game:path>')
 @bottle.view('game.html')
-def game(game_uuid=None, digest=None, serial_game=None):
-    if serial_game is None:
-        board = chess.Board()
-        game_uuid = binascii.hexlify(os.urandom(UUID_LENGTH))
-        bottle.response.set_header('Cache-Control', 'public, max-age=3600')
-    else:
-        if not hmac.compare_digest(trusted_digest(game_uuid, serial_game), digest):
-            raise bottle.HTTPError(404, "Tampered link")
-        board = chess.Board(serial_game)
+def game(game_uuid, white, black, digest, serial_game):
+    if not hmac.compare_digest(trusted_digest(game_uuid, serial_game, white, black), digest):
+        raise bottle.HTTPError(404, "Tampered link")
+    board = chess.Board(serial_game)
     return dict(
         board=board,
         current_url=bottle.request.url,
-        moves=move_generator(board, game_uuid),
+        moves=move_generator(board, game_uuid, white, black),
+        white=white,
+        black=black,
     )
 
 if __name__ == '__main__':
