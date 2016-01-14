@@ -52,15 +52,17 @@ def index():
     return {}
 
 
-def mint_game_url(board, game_uuid, white, black):
+def mint_game_url(board, game_uuid, move_count, white, black):
     serial_game = board.fen()
     return '/' + '/'.join(map(urllib.quote, [
         'game',
         game_uuid,
+        move_count,
         white,
         black,
         trusted_digest(
             game_uuid,
+            move_count,
             serial_game,
             white,
             black),
@@ -73,31 +75,36 @@ def start():
     black = bottle.request.forms.get('black') or 'black'
     game_uuid = binascii.hexlify(os.urandom(UUID_LENGTH))
     board = chess.Board()
-    bottle.redirect(mint_game_url(board, game_uuid, white, black))
+    bottle.redirect(mint_game_url(board, game_uuid, '0', white, black))
 
 
-def move_generator(board, game_uuid, white, black):
+def move_generator(board, game_uuid, move_count, white, black):
     moves = []
     for move in sorted(board.legal_moves, key=lambda x: x.uci()):
         board.push(move)
         serial_game = board.fen()
-        moves.append((move.uci(), mint_game_url(board, game_uuid, white, black)))
+        moves.append((move.uci(), mint_game_url(board,
+            game_uuid,
+            str(move_count + 1),
+            white,
+            black)))
         board.pop()
     return moves
 
 
-@app.route('/game/<game_uuid>/<white>/<black>/<digest>/<serial_game:path>')
+@app.route('/game/<game_uuid>/<move_count:int>/<white>/<black>/<digest>/<serial_game:path>')
 @bottle.view('game.html')
-def game(game_uuid, white, black, digest, serial_game):
-    if not hmac.compare_digest(trusted_digest(game_uuid, serial_game, white, black), digest):
+def game(game_uuid, move_count, white, black, digest, serial_game):
+    if not hmac.compare_digest(trusted_digest(game_uuid, move_count, serial_game, white, black), digest):
         raise bottle.HTTPError(404, "Tampered link")
     board = chess.Board(serial_game)
     return dict(
         board=board,
         current_url=bottle.request.url,
-        moves=move_generator(board, game_uuid, white, black),
+        moves=move_generator(board, game_uuid, move_count, white, black),
         white=white,
         black=black,
+        move_count=move_count,
     )
 
 if __name__ == '__main__':
