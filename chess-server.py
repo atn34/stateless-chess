@@ -80,12 +80,13 @@ def start():
     board = chess.Board()
     start_url = mint_game_url(board, game_uuid, '0', white, black)
     sendemail.send_from_statelesschess(white,
-        "You're in a game of stateless chess!",
-        bottle.template('email.txt', dict(opponent=black,
-            start_url=start_url,
-            side='white',
-            token=trusted_digest(game_uuid, 'white'))))
+                                       "You're in a game of stateless chess!",
+                                       bottle.template('email.txt', dict(opponent=black,
+                                                                         start_url=start_url,
+                                                                         side='white',
+                                                                         token=trusted_digest(game_uuid, 'white'))))
     bottle.redirect('/static/html/sent.html')
+
 
 def move_generator(board, game_uuid, move_count, white, black):
     moves = []
@@ -130,14 +131,15 @@ def move(game_uuid, move_count, white, black, digest, move, serial_game):
         raise bottle.HTTPError(403, "No token provided")
     move = chess.Move.from_uci(move)
     board.push(move)
-    new_url = mint_game_url(board, game_uuid, str(move_count + 1), white, black)
+    new_url = mint_game_url(
+        board, game_uuid, str(move_count + 1), white, black)
     if move_count == 0:
         sendemail.send_from_statelesschess(black,
-            "You're in a game of stateless chess!",
-            bottle.template('email.txt', dict(opponent=white,
-                side='black',
-                start_url=new_url,
-                token=trusted_digest(game_uuid, 'black'))))
+                                           "You're in a game of stateless chess!",
+                                           bottle.template('email.txt', dict(opponent=white,
+                                                                             side='black',
+                                                                             start_url=new_url,
+                                                                             token=trusted_digest(game_uuid, 'black'))))
     return dict(new_url=new_url)
 
 
