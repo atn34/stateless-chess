@@ -23,6 +23,11 @@ def compressed_available(path):
     return not path.startswith('img')
 
 
+@app.route('/favicon.ico')
+def favicon():
+    return static('favicon.ico')
+
+
 @app.route('/static/<path:path>')
 def static(path):
     gzip_available = compressed_available(path)
