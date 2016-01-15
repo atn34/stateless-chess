@@ -5,19 +5,17 @@ Usage: chess-server.py [--debug] [--port PORT] [--secret SECRET]
 --debug
 --secret SECRET  [default: secret]
 """
-import binascii
 import bottle
 import chess
 import hashlib
 import hmac
-import os
+import sendemail
 import urllib
+import uuid
 
 app = bottle.Bottle()
 
 secret = 'secret'
-
-UUID_LENGTH = 16
 
 
 def compressed_available(path):
@@ -71,11 +69,25 @@ def mint_game_url(board, game_uuid, move_count, white, black):
 
 @app.post('/start')
 def start():
-    white = bottle.request.forms.get('white') or 'white'
-    black = bottle.request.forms.get('black') or 'black'
-    game_uuid = binascii.hexlify(os.urandom(UUID_LENGTH))
+    white = bottle.request.forms.get('white')
+    black = bottle.request.forms.get('black')
+    game_uuid = str(uuid.uuid4())
     board = chess.Board()
-    bottle.redirect(mint_game_url(board, game_uuid, '0', white, black))
+    scheme, host = bottle.request.urlparts[:2]
+    start_url = scheme + '://' + host + mint_game_url(board, game_uuid, '0', white, black)
+    sendemail.send_from_statelesschess(white,
+        "You're in a game of stateless chess!",
+        bottle.template('''
+secret token for white: {{token}}
+start board: {{start_url}}
+''', dict(start_url=start_url,token=trusted_digest(game_uuid, 'white'))))
+    sendemail.send_from_statelesschess(black,
+        "You're in a game of stateless chess!",
+        bottle.template('''
+secret token for black: {{token}}
+start board: {{start_url}}
+''', dict(start_url=start_url,token=trusted_digest(game_uuid, 'black'))))
+    bottle.redirect(start_url)
 
 
 def move_generator(board, game_uuid, move_count, white, black):
