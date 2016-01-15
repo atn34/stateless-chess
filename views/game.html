@@ -46,6 +46,13 @@
 $.ajaxSetup({
   contentType: "application/json; charset=utf-8"
 });
+
+var storedToken = localStorage.getItem('{{token_name}}');
+
+if (storedToken) {
+    document.getElementById("token").value = storedToken;
+}
+
 var doMove = function(moveUrl) {
     var token = document.getElementById("token").value; 
     if (!token) {
@@ -58,6 +65,7 @@ var doMove = function(moveUrl) {
         dataType: "json",
         data: JSON.stringify({"token": token}),
         success: function(data) {
+            localStorage.setItem('{{token_name}}', token);
             window.location.href = data.new_url;
         },
         error: function (xhr, ajaxOptions, thrownError) {
