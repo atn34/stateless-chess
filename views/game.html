@@ -10,9 +10,17 @@
     <div class="container" style="max-width: 500px">
     <h1 style="text-align: center">move number {{move_count}}</h1>
     <div id="board" style="width: 100%; margin-bottom: 5px;"></div>
-    <button class="btn btn-primary btn-block" data-clipboard-text="{{current_url}}">
+    <button class="btn btn-primary btn-block" style="margin-bottom: 5px" data-clipboard-text="{{current_url}}">
     Copy url to clipboard
     </button>
+    <div class="form-horizontal">
+        <div class="form-group">
+            <label class="col-sm-2 control-label">Token</label>
+            <div class="col-sm-10">
+                <input class="form-control" name="token" id="token-input" value="">
+            </div>
+        </div>
+    </div>
     % if board.is_game_over():
     <p> Game over! Result: {{board.result()}} </p>
     % else:

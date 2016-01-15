@@ -127,20 +127,17 @@ def move(game_uuid, move_count, white, black, digest, move, serial_game):
             black,
             move), digest):
         raise bottle.HTTPError(404, "Tampered link")
-    move = chess.Move.from_uci(move)
     board = chess.Board(serial_game)
     side = 'white' if board.turn else 'black'
-    board.push(move)
-    new_url = mint_game_url(board, game_uuid, str(move_count + 1), white, black)
     try:
         token = bottle.request.json['token'].encode('utf8')
-        print token
-        print trusted_digest(game_uuid, side)
-        print game_uuid, side
         if not hmac.compare_digest(trusted_digest(game_uuid, side), token):
             raise bottle.HTTPError(403, "Bad token provided")
     except KeyError:
         raise bottle.HTTPError(403, "No token provided")
+    move = chess.Move.from_uci(move)
+    board.push(move)
+    new_url = mint_game_url(board, game_uuid, str(move_count + 1), white, black)
     return dict(new_url=new_url)
 
 
