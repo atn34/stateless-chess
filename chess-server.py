@@ -81,13 +81,10 @@ def start():
     start_url = mint_game_url(board, game_uuid, '0', white, black)
     sendemail.send_from_statelesschess(white,
         "You're in a game of stateless chess!",
-        bottle.template('''
-opponent: {{black}}
-secret token for white: {{token}}
-start board: {{start_url}}?token={{token}}
-''', dict(black=black,
-          start_url=start_url,
-          token=trusted_digest(game_uuid, 'white'))))
+        bottle.template('email.txt', dict(opponent=black,
+            start_url=start_url,
+            side='white',
+            token=trusted_digest(game_uuid, 'white'))))
     bottle.redirect('/static/html/sent.html')
 
 def move_generator(board, game_uuid, move_count, white, black):
@@ -137,13 +134,10 @@ def move(game_uuid, move_count, white, black, digest, move, serial_game):
     if move_count == 0:
         sendemail.send_from_statelesschess(black,
             "You're in a game of stateless chess!",
-            bottle.template('''
-opponent: {{white}}
-secret token for black: {{token}}
-start board: {{start_url}}?token={{token}}
-''', dict(white=white,
-          start_url=new_url,
-          token=trusted_digest(game_uuid, 'black'))))
+            bottle.template('email.txt', dict(opponent=white,
+                side='black',
+                start_url=new_url,
+                token=trusted_digest(game_uuid, 'black'))))
     return dict(new_url=new_url)
 
 

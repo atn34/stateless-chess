@@ -1,0 +1,5 @@
+opponent: {{opponent}}
+secret token for {{side}}: {{token}}
+start board: {{start_url}}?token={{token}}
+
+Stateless chess only emails players to dispense secret tokens, and users must send urls back and forth to play.
