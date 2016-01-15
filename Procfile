@@ -1,1 +1,1 @@
-web: python ./chess-server.py --port $PORT
+web: python ./chess-server.py --port $PORT --secret $SECRET
