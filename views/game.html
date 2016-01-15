@@ -47,11 +47,15 @@ $.ajaxSetup({
   contentType: "application/json; charset=utf-8"
 });
 
+% if token_value is None:
 var storedToken = localStorage.getItem('{{token_name}}');
-
 if (storedToken) {
     document.getElementById("token").value = storedToken;
 }
+% else:
+document.getElementById("token").value = '{{token_value}}';
+% end
+
 
 var doMove = function(moveUrl) {
     var token = document.getElementById("token").value; 

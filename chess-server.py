@@ -82,15 +82,12 @@ def start():
     sendemail.send_from_statelesschess(white,
         "You're in a game of stateless chess!",
         bottle.template('''
+opponent: {{black}}
 secret token for white: {{token}}
-start board: {{start_url}}
-''', dict(start_url=start_url,token=trusted_digest(game_uuid, 'white'))))
-    sendemail.send_from_statelesschess(black,
-        "You're in a game of stateless chess!",
-        bottle.template('''
-secret token for black: {{token}}
-start board: {{start_url}}
-''', dict(start_url=start_url,token=trusted_digest(game_uuid, 'black'))))
+start board: {{start_url}}?token={{token}}
+''', dict(black=black,
+          start_url=start_url,
+          token=trusted_digest(game_uuid, 'white'))))
     bottle.redirect(start_url)
 
 
@@ -138,6 +135,16 @@ def move(game_uuid, move_count, white, black, digest, move, serial_game):
     move = chess.Move.from_uci(move)
     board.push(move)
     new_url = mint_game_url(board, game_uuid, str(move_count + 1), white, black)
+    if move_count == 0:
+        sendemail.send_from_statelesschess(black,
+            "You're in a game of stateless chess!",
+            bottle.template('''
+opponent: {{white}}
+secret token for black: {{token}}
+start board: {{start_url}}?token={{token}}
+''', dict(white=white,
+          start_url=new_url,
+          token=trusted_digest(game_uuid, 'black'))))
     return dict(new_url=new_url)
 
 
@@ -155,6 +162,7 @@ def game(game_uuid, move_count, white, black, digest, serial_game):
         black=black,
         move_count=move_count,
         token_name=game_uuid + 'white' if board.turn else 'black',
+        token_value=bottle.request.query.get('token'),
     )
 
 if __name__ == '__main__':
