@@ -108,6 +108,7 @@ var cfg = {
         % if move[-1] in map(str, xrange(1,9)):
         if (attempt === '{{move}}') {
             doMove('{{link}}');
+            return '';
         }
         % else:
         if (new RegExp('^' + attempt).test('{{move}}')) {
