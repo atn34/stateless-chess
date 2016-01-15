@@ -50,9 +50,14 @@ def index():
     return {}
 
 
+def make_url_path(*args):
+    return '/' + '/'.join(map(urllib.quote, args))
+
+
 def mint_game_url(board, game_uuid, move_count, white, black):
+    scheme, host = bottle.request.urlparts[:2]
     serial_game = board.fen()
-    return '/' + '/'.join(map(urllib.quote, [
+    return scheme + '://' + host + make_url_path(
         'game',
         game_uuid,
         move_count,
@@ -64,7 +69,7 @@ def mint_game_url(board, game_uuid, move_count, white, black):
             serial_game,
             white,
             black),
-        serial_game]))
+        serial_game)
 
 
 @app.post('/start')
@@ -73,8 +78,7 @@ def start():
     black = bottle.request.forms.get('black')
     game_uuid = str(uuid.uuid4())
     board = chess.Board()
-    scheme, host = bottle.request.urlparts[:2]
-    start_url = scheme + '://' + host + mint_game_url(board, game_uuid, '0', white, black)
+    start_url = mint_game_url(board, game_uuid, '0', white, black)
     sendemail.send_from_statelesschess(white,
         "You're in a game of stateless chess!",
         bottle.template('''
@@ -92,16 +96,52 @@ start board: {{start_url}}
 
 def move_generator(board, game_uuid, move_count, white, black):
     moves = []
+    serial_game = board.fen()
     for move in sorted(board.legal_moves, key=lambda x: x.uci()):
-        board.push(move)
-        serial_game = board.fen()
-        moves.append((move.uci(), mint_game_url(board,
+        moves.append((move.uci(), make_url_path(
+            'move',
             game_uuid,
-            str(move_count + 1),
+            str(move_count),
             white,
-            black)))
-        board.pop()
+            black,
+            trusted_digest(
+                game_uuid,
+                move_count,
+                serial_game,
+                white,
+                black,
+                move.uci()
+            ),
+            move.uci(),
+            serial_game)))
     return moves
+
+
+@app.post('/move/<game_uuid>/<move_count:int>/<white>/<black>/<digest>/<move>/<serial_game:path>')
+def move(game_uuid, move_count, white, black, digest, move, serial_game):
+    if not hmac.compare_digest(trusted_digest(
+            game_uuid,
+            move_count,
+            serial_game,
+            white,
+            black,
+            move), digest):
+        raise bottle.HTTPError(404, "Tampered link")
+    move = chess.Move.from_uci(move)
+    board = chess.Board(serial_game)
+    side = 'white' if board.turn else 'black'
+    board.push(move)
+    new_url = mint_game_url(board, game_uuid, str(move_count + 1), white, black)
+    try:
+        token = bottle.request.json['token'].encode('utf8')
+        print token
+        print trusted_digest(game_uuid, side)
+        print game_uuid, side
+        if not hmac.compare_digest(trusted_digest(game_uuid, side), token):
+            raise bottle.HTTPError(403, "Bad token provided")
+    except KeyError:
+        raise bottle.HTTPError(403, "No token provided")
+    return dict(new_url=new_url)
 
 
 @app.route('/game/<game_uuid>/<move_count:int>/<white>/<black>/<digest>/<serial_game:path>')
