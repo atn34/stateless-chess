@@ -5,6 +5,11 @@
 <button class="btn btn-primary btn-block" style="margin-bottom: 5px" data-clipboard-text="{{current_url}}">
 Copy url to clipboard
 </button>
+% whose_turn = white if board.turn else black
+% import urllib
+<a class="btn btn-primary btn-block" style="margin-bottom: 5px" href="mailto:{{whose_turn}}?subject=Your turn&body={{urllib.quote(current_url)}}">
+Email {{whose_turn}}
+</a>
 <div class="form-horizontal">
     <div class="form-group">
         <label class="col-sm-2 control-label">Token</label>
