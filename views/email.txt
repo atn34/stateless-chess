@@ -2,4 +2,8 @@ opponent: {{opponent}}
 secret token for {{side}}: {{token}}
 start board: {{start_url}}?token={{token}}
 
+% if side == 'white':
+As soon as you make the first move, {{opponent}} will get an email with their token.
+% end
+
 Stateless chess only emails players to dispense secret tokens, and users must send urls back and forth to play.
