@@ -88,8 +88,7 @@ start board: {{start_url}}?token={{token}}
 ''', dict(black=black,
           start_url=start_url,
           token=trusted_digest(game_uuid, 'white'))))
-    bottle.redirect(start_url)
-
+    bottle.redirect('/static/html/sent.html')
 
 def move_generator(board, game_uuid, move_count, white, black):
     moves = []
