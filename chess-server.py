@@ -161,7 +161,7 @@ def game(game_uuid, move_count, white, black, digest, serial_game):
         white=white,
         black=black,
         move_count=move_count,
-        token_name=game_uuid + 'white' if board.turn else 'black',
+        token_name=game_uuid + ('white' if board.turn else 'black'),
         token_value=bottle.request.query.get('token'),
     )
 
