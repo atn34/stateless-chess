@@ -19,23 +19,27 @@ Email {{whose_turn}}
         </div>
     </div>
 </div>
-% if board.is_game_over():
-<p> Game over! Result: {{board.result()}} </p>
+% if game.active:
+<p>
+% if board.turn:
+White ({{white}})
 % else:
-    <p>
-    % if board.turn:
-    White ({{white}})
-    % else:
-    Black ({{black}})
-    % end
-    to move. Here are all legal moves. Click one, or drag pieces on the board.
-    </p>
-    <div class="list-group" style="text-align: center">
-        % for (move, link) in moves:
-        <a href="javascript:doMove('{{link}}');" class="list-group-item">{{move}}</a>
-        % end
-    </div>
+Black ({{black}})
 % end
+to move. Here are all legal moves. Click one, or drag pieces on the board.
+</p>
+<div class="list-group" style="text-align: center">
+    % if board.can_claim_draw():
+    <a href="javascript:doMove('{{draw_link}}');" class="list-group-item">claim draw</a>
+    % end
+    % for (move, link) in moves:
+    <a href="javascript:doMove('{{link}}');" class="list-group-item">{{move}}</a>
+    % end
+</div>
+% else:
+<p> Game over! Result: {{board.result(claim_draw=game.claim_draw)}} </p>
+% end
+
 % end
 
 % def scripts():
@@ -102,10 +106,11 @@ new Clipboard('.btn');
 var cfg = {
     pieceTheme: '/static/img/chesspieces/wikipedia/{piece}.png',
     position: '{{board.fen()}}',
-    draggable: true,
+    draggable: {{'true' if game.active else 'false'}},
     onDrop: function(start, end) {
         removeGreySquares();
         var attempt = start + end;
+        % if game.active:
         % for (move, link) in moves:
         % if move[-1] in map(str, xrange(1,9)):
         if (attempt === '{{move}}') {
@@ -116,6 +121,7 @@ var cfg = {
             alert('For pawn promotions, please use buttons');
             return 'snapback';
         }
+        % end
         % end
         % end
         return 'snapback';

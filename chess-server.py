@@ -60,6 +60,7 @@ class Game(Base):
         self.active = True
         self.uuid = str(uuid.uuid4())
         self.move_count = 0
+        self.claim_draw = False
 
     id = Column(Integer, primary_key=True)
     white = Column(String, index=True)
@@ -68,6 +69,7 @@ class Game(Base):
     uuid = Column(String)
     active = Column(Boolean)
     move_count = Column(Integer)
+    claim_draw = Column(Boolean)
 
 
 def compressed_available(path):
@@ -112,9 +114,9 @@ def trusted_digest(*args):
     return h.hexdigest()
 
 
-@app.route('/', skip_plugins=[sql_plugin])
+@app.route('/')
 @bottle.view('index.html')
-def index():
+def index(db):
     return {}
 
 
@@ -144,33 +146,41 @@ def move_generator(game):
         moves.append((move.uci(), make_url_path(
             'move',
             str(game.id),
-            game.uuid,
             'uci',
             move.uci())))
     return moves
 
 
-@app.post('/move/<game_id:int>/<game_uuid>/uci/<move>')
-def move(db, game_id, game_uuid, move):
+@app.post('/move/<game_id:int>/uci/<move>')
+@app.post('/move/<game_id:int>/draw')
+def move(db, game_id, move=None):
     game = db.query(Game).get(game_id)
-    if game is None or game.uuid != game_uuid:
+    if game is None:
         raise bottle.HTTPError(404)
+    if not game.active:
+        raise bottle.HTTPError(403, "Game is over")
     board = chess.Board()
     board.set_epd(game.epd)
-    move = chess.Move.from_uci(move)
-    if move not in board.legal_moves:
-        raise bottle.HTTPError(404)
     side = 'white' if board.turn else 'black'
     try:
         token = bottle.request.json['token'].encode('utf8')
-        if not hmac.compare_digest(trusted_digest(game_uuid, side), token):
+        if not hmac.compare_digest(trusted_digest(game.uuid, side), token):
             raise bottle.HTTPError(403, "Bad token provided")
     except KeyError:
         raise bottle.HTTPError(403, "No token provided")
-    board.push(move)
+    if move is not None:
+        move = chess.Move.from_uci(move)
+        if move not in board.legal_moves:
+            raise bottle.HTTPError(404)
+        board.push(move)
+    else:
+        if board.can_claim_draw():
+            game.claim_draw = True
     new_url = mint_game_url(game)
     game.move_count += 1
     game.epd = board.epd(hmvc=board.halfmove_clock, fmvc=board.fullmove_number)
+    if board.is_game_over(claim_draw=game.claim_draw):
+        game.active = False
     db.add(game)
     db.flush()
     if game.move_count == 1:
@@ -179,7 +189,7 @@ def move(db, game_id, game_uuid, move):
                                            bottle.template('email.txt', dict(opponent=game.white,
                                                                              side='black',
                                                                              start_url=new_url,
-                                                                             token=trusted_digest(game_uuid, 'black'))))
+                                                                             token=trusted_digest(game.uuid, 'black'))))
     return dict(new_url=new_url)
 
 
@@ -200,6 +210,7 @@ def game(db, game_id):
         current_url=current_url,
         game=game,
         moves=move_generator(game),
+        draw_link=make_url_path('move', str(game.id), 'draw'),
         white=game.white,
         black=game.black,
         token_name=game.uuid + ('white' if board.turn else 'black'),
