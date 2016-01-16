@@ -1,6 +1,6 @@
 % def content():
 <div class="container" style="max-width: 500px">
-<h1 style="text-align: center">move number {{move_count}}</h1>
+<h1 style="text-align: center">move number {{game.move_count}}</h1>
 <div id="board" style="width: 100%; margin-bottom: 5px;"></div>
 <button class="btn btn-primary btn-block" style="margin-bottom: 5px" data-clipboard-text="{{current_url}}">
 Copy url to clipboard
@@ -60,7 +60,7 @@ var doMove = function(moveUrl) {
     var token = document.getElementById("token").value; 
     if (!token) {
         alert("Please supply your token");
-        return;
+        return 'snapback';
     }
     $.ajax({
         type: "POST",
@@ -77,6 +77,7 @@ var doMove = function(moveUrl) {
             } else {
                 alert(thrownError);
             }
+            location.reload();
         }
     });
 };
@@ -107,8 +108,7 @@ var cfg = {
         % for (move, link) in moves:
         % if move[-1] in map(str, xrange(1,9)):
         if (attempt === '{{move}}') {
-            doMove('{{link}}');
-            return '';
+            return doMove('{{link}}');
         }
         % else:
         if (new RegExp('^' + attempt).test('{{move}}')) {

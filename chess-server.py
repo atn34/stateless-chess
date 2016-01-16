@@ -5,6 +5,14 @@ Usage: chess-server.py [--debug] [--port PORT] [--secret SECRET]
 --debug
 --secret SECRET  [default: secret]
 """
+
+from bottle.ext import sqlalchemy
+from sqlalchemy import Boolean
+from sqlalchemy import Column
+from sqlalchemy import Integer
+from sqlalchemy import String
+from sqlalchemy import create_engine
+from sqlalchemy.ext.declarative import declarative_base
 import bottle
 import chess
 import hashlib
@@ -13,9 +21,50 @@ import sendemail
 import urllib
 import uuid
 
+Base = declarative_base()
+
+engine = create_engine('sqlite:////tmp/chess.db', echo=True)
+
 app = bottle.Bottle()
+sql_plugin = sqlalchemy.Plugin(
+    engine,  # SQLAlchemy engine created with create_engine function.
+    Base.metadata,  # SQLAlchemy metadata, required only if create=True.
+    # Keyword used to inject session database in a app.route (default 'db').
+    keyword='db',
+    # If it is true, execute `metadata.create_all(engine)` when plugin is
+    # applied (default False).
+    create=True,
+    # If it is true, plugin commit changes after app.route is executed (default
+    # True).
+    commit=True,
+    # If it is true and keyword is not defined, plugin uses **kwargs argument
+    # to inject session database (default False).
+    use_kwargs=False
+)
+
+app.install(sql_plugin)
 
 secret = 'secret'
+
+class Game(Base):
+    __tablename__ = 'games'
+
+    def __init__(self, white, black):
+        self.white = white
+        self.black = black
+        board = chess.Board()
+        self.epd = board.epd()
+        self.active = True
+        self.uuid = str(uuid.uuid4())
+        self.move_count = 0
+
+    id = Column(Integer, primary_key=True)
+    white = Column(String, index=True)
+    black = Column(String, index=True)
+    epd = Column(String)
+    uuid = Column(String)
+    active = Column(Boolean)
+    move_count = Column(Integer)
 
 
 def compressed_available(path):
@@ -23,12 +72,23 @@ def compressed_available(path):
     return not path.startswith('img')
 
 
-@app.route('/favicon.ico')
+def make_url_path(*args):
+    return '/' + '/'.join(map(urllib.quote, args))
+
+
+def mint_game_url(game):
+    scheme, host = bottle.request.urlparts[:2]
+    return scheme + '://' + host + make_url_path(
+        'game',
+        str(game.id))
+
+
+@app.route('/favicon.ico', skip=[sql_plugin])
 def favicon():
     return static('favicon.ico')
 
 
-@app.route('/static/<path:path>')
+@app.route('/static/<path:path>', skip=[sql_plugin])
 def static(path):
     gzip_available = compressed_available(path)
     if gzip_available and 'gzip' in bottle.request.headers.get('Accept-Encoding', ''):
@@ -49,84 +109,54 @@ def trusted_digest(*args):
     return h.hexdigest()
 
 
-@app.route('/')
+@app.route('/', skip_plugins=[sql_plugin])
 @bottle.view('index.html')
 def index():
     return {}
 
 
-def make_url_path(*args):
-    return '/' + '/'.join(map(urllib.quote, args))
-
-
-def mint_game_url(board, game_uuid, move_count, white, black):
-    scheme, host = bottle.request.urlparts[:2]
-    serial_game = board.fen()
-    return scheme + '://' + host + make_url_path(
-        'game',
-        game_uuid,
-        move_count,
-        white,
-        black,
-        trusted_digest(
-            game_uuid,
-            move_count,
-            serial_game,
-            white,
-            black),
-        serial_game)
-
-
 @app.post('/start')
-def start():
+def start(db):
     white = bottle.request.forms.get('white')
     black = bottle.request.forms.get('black')
-    game_uuid = str(uuid.uuid4())
-    board = chess.Board()
-    start_url = mint_game_url(board, game_uuid, '0', white, black)
+    game = Game(white, black)
+    db.add(game)
+    db.flush()
+    db.refresh(game)
+    start_url = mint_game_url(game)
     sendemail.send_from_statelesschess(white,
                                        "You're in a game of stateless chess!",
                                        bottle.template('email.txt', dict(opponent=black,
                                                                          start_url=start_url,
                                                                          side='white',
-                                                                         token=trusted_digest(game_uuid, 'white'))))
+                                                                         token=trusted_digest(game.uuid, 'white'))))
     bottle.redirect('/static/html/sent.html')
 
 
-def move_generator(board, game_uuid, move_count, white, black):
+def move_generator(game):
     moves = []
-    serial_game = board.fen()
+    board = chess.Board()
+    board.set_epd(game.epd)
     for move in sorted(board.legal_moves, key=lambda x: x.uci()):
         moves.append((move.uci(), make_url_path(
             'move',
-            game_uuid,
-            str(move_count),
-            white,
-            black,
-            trusted_digest(
-                game_uuid,
-                move_count,
-                serial_game,
-                white,
-                black,
-                move.uci()
-            ),
-            move.uci(),
-            serial_game)))
+            str(game.id),
+            game.uuid,
+            'uci',
+            move.uci())))
     return moves
 
 
-@app.post('/move/<game_uuid>/<move_count:int>/<white>/<black>/<digest>/<move>/<serial_game:path>')
-def move(game_uuid, move_count, white, black, digest, move, serial_game):
-    if not hmac.compare_digest(trusted_digest(
-            game_uuid,
-            move_count,
-            serial_game,
-            white,
-            black,
-            move), digest):
-        raise bottle.HTTPError(404, "Tampered link")
-    board = chess.Board(serial_game)
+@app.post('/move/<game_id:int>/<game_uuid>/uci/<move>')
+def move(db, game_id, game_uuid, move):
+    game = db.query(Game).get(game_id)
+    if game is None or game.uuid != game_uuid:
+        raise bottle.HTTPError(404)
+    board = chess.Board()
+    board.set_epd(game.epd)
+    move = chess.Move.from_uci(move)
+    if move not in board.legal_moves:
+        raise bottle.HTTPError(404)
     side = 'white' if board.turn else 'black'
     try:
         token = bottle.request.json['token'].encode('utf8')
@@ -134,34 +164,42 @@ def move(game_uuid, move_count, white, black, digest, move, serial_game):
             raise bottle.HTTPError(403, "Bad token provided")
     except KeyError:
         raise bottle.HTTPError(403, "No token provided")
-    move = chess.Move.from_uci(move)
     board.push(move)
-    new_url = mint_game_url(
-        board, game_uuid, str(move_count + 1), white, black)
-    if move_count == 0:
-        sendemail.send_from_statelesschess(black,
+    new_url = mint_game_url(game)
+    game.move_count += 1
+    game.epd = board.epd(hmvc=board.halfmove_clock, fmvc=board.fullmove_number)
+    db.add(game)
+    db.flush()
+    if game.move_count == 1:
+        sendemail.send_from_statelesschess(game.black,
                                            "You're in a game of stateless chess!",
-                                           bottle.template('email.txt', dict(opponent=white,
+                                           bottle.template('email.txt', dict(opponent=game.white,
                                                                              side='black',
                                                                              start_url=new_url,
                                                                              token=trusted_digest(game_uuid, 'black'))))
     return dict(new_url=new_url)
 
 
-@app.route('/game/<game_uuid>/<move_count:int>/<white>/<black>/<digest>/<serial_game:path>')
+@app.route('/game/<game_id:int>', sqlalchemy=dict(use_kwargs=True))
 @bottle.view('game.html')
-def game(game_uuid, move_count, white, black, digest, serial_game):
-    if not hmac.compare_digest(trusted_digest(game_uuid, move_count, serial_game, white, black), digest):
-        raise bottle.HTTPError(404, "Tampered link")
-    board = chess.Board(serial_game)
+def game(db, game_id):
+    game = db.query(Game).get(game_id)
+    if game is None:
+        raise bottle.HTTPError(404)
+    board = chess.Board()
+    board.set_epd(game.epd)
+    current_url = bottle.request.url
+    q_index = current_url.find('?')
+    if q_index >= 0:
+        current_url = current_url[:q_index]
     return dict(
         board=board,
-        current_url=bottle.request.url,
-        moves=move_generator(board, game_uuid, move_count, white, black),
-        white=white,
-        black=black,
-        move_count=move_count,
-        token_name=game_uuid + ('white' if board.turn else 'black'),
+        current_url=current_url,
+        game=game,
+        moves=move_generator(game),
+        white=game.white,
+        black=game.black,
+        token_name=game.uuid + ('white' if board.turn else 'black'),
         token_value=bottle.request.query.get('token'),
     )
 
