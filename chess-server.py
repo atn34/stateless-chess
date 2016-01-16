@@ -7,73 +7,25 @@ Usage: chess-server.py [--debug] [--port PORT] [--secret SECRET]
 """
 
 from bottle.ext import sqlalchemy
-from sqlalchemy import Boolean
-from sqlalchemy import Column
-from sqlalchemy import Integer
-from sqlalchemy import String
 from sqlalchemy import and_
-from sqlalchemy import create_engine
 from sqlalchemy import or_
-from sqlalchemy.ext.declarative import declarative_base
 import bottle
 import chess
 import hashlib
 import hmac
-import os
-import sendemail
 import urllib
 import uuid
 
-Base = declarative_base()
-
-echo_db = False
-
-engine = create_engine(os.environ.get('DATABASE_URL', 'sqlite:////tmp/chess.db'), echo=echo_db)
+import sendemail
+import models
 
 app = bottle.Bottle()
-sql_plugin = sqlalchemy.Plugin(
-    engine,  # SQLAlchemy engine created with create_engine function.
-    Base.metadata,  # SQLAlchemy metadata, required only if create=True.
-    # Keyword used to inject session database in a app.route (default 'db').
-    keyword='db',
-    # If it is true, execute `metadata.create_all(engine)` when plugin is
-    # applied (default False).
-    create=True,
-    # If it is true, plugin commit changes after app.route is executed (default
-    # True).
-    commit=True,
-    # If it is true and keyword is not defined, plugin uses **kwargs argument
-    # to inject session database (default False).
-    use_kwargs=True,
-)
+sql_plugin = models.sql_plugin
+Game = models.Game
 
 app.install(sql_plugin)
 
 secret = 'secret'
-
-class Game(Base):
-    __tablename__ = 'games'
-
-    def __init__(self, white, black):
-        self.white = white
-        self.black = black
-        board = chess.Board()
-        self.epd = board.epd()
-        self.active = True
-        self.uuid = str(uuid.uuid4())
-        self.move_count = 0
-        self.claim_draw = False
-        self.turn = True
-
-    id = Column(Integer, primary_key=True)
-    white = Column(String, index=True)
-    black = Column(String, index=True)
-    epd = Column(String)
-    uuid = Column(String)
-    active = Column(Boolean)
-    move_count = Column(Integer)
-    claim_draw = Column(Boolean)
-    turn = Column(Boolean)
 
 
 def compressed_available(path):
@@ -249,7 +201,7 @@ if __name__ == '__main__':
     arguments = docopt(__doc__)
     secret = arguments['--secret']
     if arguments['--debug']:
-        echo_db = True
+        models.echo_db = True
         app.run(host='localhost', debug=True, reloader=True,
                 port=int(arguments['--port']))
     else:
