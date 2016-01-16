@@ -28,7 +28,7 @@ Base = declarative_base()
 
 echo_db = False
 
-engine = create_engine(os.environ.get('DB_URL', 'sqlite:////tmp/chess.db'), echo=echo_db)
+engine = create_engine(os.environ.get('DATABASE_URL', 'sqlite:////tmp/chess.db'), echo=echo_db)
 
 app = bottle.Bottle()
 sql_plugin = sqlalchemy.Plugin(
