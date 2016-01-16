@@ -1,0 +1,32 @@
+% def content():
+<h1> {{email}}'s turn </h1>
+<div class="list-group" style="text-align: center">
+    % if len(games):
+    % for game in games:
+    % link = '/game/' + str(game.id)
+    % opponent = game.black if game.turn else game.white
+    <a href="{{link}}" class="list-group-item">{{opponent}}</a>
+    % end
+    % else:
+    No games!
+    % end
+</div>
+<h1> Opponent's turn </h1>
+<div class="list-group" style="text-align: center">
+    % if len(opponent_games):
+    % for game in opponent_games:
+    % link = '/game/' + str(game.id)
+    % opponent = game.white if game.turn else game.black
+    <a href="{{link}}" class="list-group-item">{{opponent}}</a>
+    % end
+    % else:
+    No games!
+    % end
+</div>
+% end
+
+% def scripts():
+
+% end
+
+% rebase base content=content, scripts=scripts

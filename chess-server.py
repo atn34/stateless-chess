@@ -11,7 +11,9 @@ from sqlalchemy import Boolean
 from sqlalchemy import Column
 from sqlalchemy import Integer
 from sqlalchemy import String
+from sqlalchemy import and_
 from sqlalchemy import create_engine
+from sqlalchemy import or_
 from sqlalchemy.ext.declarative import declarative_base
 import bottle
 import chess
@@ -61,6 +63,7 @@ class Game(Base):
         self.uuid = str(uuid.uuid4())
         self.move_count = 0
         self.claim_draw = False
+        self.turn = True
 
     id = Column(Integer, primary_key=True)
     white = Column(String, index=True)
@@ -70,6 +73,7 @@ class Game(Base):
     active = Column(Boolean)
     move_count = Column(Integer)
     claim_draw = Column(Boolean)
+    turn = Column(Boolean)
 
 
 def compressed_available(path):
@@ -118,6 +122,28 @@ def trusted_digest(*args):
 @bottle.view('index.html')
 def index(db):
     return {}
+
+
+@app.post('/dashboard')
+def dashboard(db):
+    email = bottle.request.forms.get('email')
+    bottle.redirect(make_url_path('dashboard', email))
+
+
+@app.route('/dashboard/<email>')
+@bottle.view('dashboard.html')
+def dashboard(db, email):
+    games = db.query(Game).filter(Game.active == True,
+                or_(and_(Game.white == email, Game.turn == True),
+                    and_(Game.black == email, Game.turn == False))).all()
+    opponent_games = db.query(Game).filter(Game.active == True,
+                or_(and_(Game.white == email, Game.turn == False),
+                    and_(Game.black == email, Game.turn == True))).all()
+    return dict(
+            email=email,
+            games=games,
+            opponent_games=opponent_games,
+            )
 
 
 @app.post('/start')
@@ -181,6 +207,7 @@ def move(db, game_id, move=None):
     game.epd = board.epd(hmvc=board.halfmove_clock, fmvc=board.fullmove_number)
     if board.is_game_over(claim_draw=game.claim_draw):
         game.active = False
+    game.turn = board.turn
     db.add(game)
     db.flush()
     if game.move_count == 1:
