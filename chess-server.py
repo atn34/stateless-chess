@@ -17,13 +17,16 @@ import bottle
 import chess
 import hashlib
 import hmac
+import os
 import sendemail
 import urllib
 import uuid
 
 Base = declarative_base()
 
-engine = create_engine('sqlite:////tmp/chess.db', echo=True)
+echo_db = False
+
+engine = create_engine(os.environ.get('DB_URL', 'sqlite:////tmp/chess.db'), echo=echo_db)
 
 app = bottle.Bottle()
 sql_plugin = sqlalchemy.Plugin(
@@ -39,7 +42,7 @@ sql_plugin = sqlalchemy.Plugin(
     commit=True,
     # If it is true and keyword is not defined, plugin uses **kwargs argument
     # to inject session database (default False).
-    use_kwargs=False
+    use_kwargs=True,
 )
 
 app.install(sql_plugin)
@@ -180,7 +183,7 @@ def move(db, game_id, game_uuid, move):
     return dict(new_url=new_url)
 
 
-@app.route('/game/<game_id:int>', sqlalchemy=dict(use_kwargs=True))
+@app.route('/game/<game_id:int>')
 @bottle.view('game.html')
 def game(db, game_id):
     game = db.query(Game).get(game_id)
@@ -208,6 +211,7 @@ if __name__ == '__main__':
     arguments = docopt(__doc__)
     secret = arguments['--secret']
     if arguments['--debug']:
+        echo_db = True
         app.run(host='localhost', debug=True, reloader=True,
                 port=int(arguments['--port']))
     else:
