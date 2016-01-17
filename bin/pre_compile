@@ -1,3 +1,5 @@
 #!/bin/sh
 
 find static -type f | grep -v '^static/img' | xargs gzip -k
+
+sed -i -e "s/^sqlalchemy\.url.*/sqlalchemy\.url = $DATABASE_URL/" alembic.ini
