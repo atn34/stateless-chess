@@ -7,6 +7,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 import chess
 import os
+import uuid
 
 Base = declarative_base()
 
