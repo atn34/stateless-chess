@@ -109,7 +109,6 @@ var highlightLastMove = function() {
     blueSquare('{{move[2:]}}');
 % end
 }
-highlightLastMove();
 
 var removeGreySquares = function() {
   $('#board .square-55d63').css('background', '');
@@ -167,6 +166,7 @@ var cfg = {
     orientation: "{{'white' if board.turn else 'black'}}",
 };
 var board = ChessBoard('board', cfg); 
+highlightLastMove();
 </script>
 % end
 
