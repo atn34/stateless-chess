@@ -6,9 +6,9 @@ Usage: chess-server.py [--debug] [--port PORT] [--secret SECRET]
 --secret SECRET  [default: secret]
 """
 
-from bottle.ext import sqlalchemy
 from sqlalchemy import and_
 from sqlalchemy import or_
+from sqlalchemy import desc
 import bottle
 import chess
 import hashlib
@@ -73,7 +73,8 @@ def trusted_digest(*args):
 @app.route('/')
 @bottle.view('index.html')
 def index(db):
-    return {}
+    recent_games = db.query(Game).order_by(desc(Game.id)).limit(20)
+    return dict(recent_games=recent_games)
 
 
 @app.post('/dashboard')

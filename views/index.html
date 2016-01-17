@@ -33,6 +33,22 @@
     </div>
 </div>
 </form>
+
+<br/>
+<br/>
+
+<h3>Recent Games</h3>
+<div class="panel panel-heading">
+<table border="0" cellspacing="20" cellpadding="5" style="width: 100%; text-align:left">
+    <tr><th>White</th><th>Black</th><th>Result</th><th>Game</th></tr>
+    % import chess
+    % for game in recent_games:
+    % board = chess.Board()
+    % board.set_epd(game.epd)
+    <tr><td>{{game.white}}</td><td>{{game.black}}</td><td>{{board.result()}}</td><td><a href="{{'/game/' + str(game.id)}}" target="_blank">{{game.id}}</a></td></tr>
+    % end
+</table>
+</div>
 % end
 
 % def scripts():
