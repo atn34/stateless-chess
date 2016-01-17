@@ -42,6 +42,7 @@ class Game(Base):
         self.move_count = 0
         self.claim_draw = False
         self.turn = True
+        self.moves = ""
 
     id = Column(Integer, primary_key=True)
     white = Column(String, index=True)
@@ -52,4 +53,5 @@ class Game(Base):
     move_count = Column(Integer)
     claim_draw = Column(Boolean)
     turn = Column(Boolean)
+    moves = Column(String)
 
