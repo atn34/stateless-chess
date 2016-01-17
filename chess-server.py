@@ -151,6 +151,10 @@ def move(db, game_id, move=None):
         if move not in board.legal_moves:
             raise bottle.HTTPError(404)
         board.push(move)
+        if game.moves:
+            game.moves += "," + move.uci()
+        else:
+            game.moves = move.uci()
     else:
         if board.can_claim_draw():
             game.claim_draw = True

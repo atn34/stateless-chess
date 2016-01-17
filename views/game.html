@@ -87,8 +87,33 @@ var doMove = function(moveUrl) {
     });
 };
 
+var blueSquare = function(square) {
+  var squareEl = $('#board .square-' + square);
+
+  var background = '#00ccff';
+  if (squareEl.hasClass('black-3c85d') === true) {
+    background = '#00a3cc';
+  }
+
+  squareEl.css('background', background);
+};
+
+var highlightLastMove = function() {
+% if game.moves:
+% if not game.moves[-1] in '12345678':
+% move = game.moves[-5:-1]
+% else:
+% move = game.moves[-4:]
+% end
+    blueSquare('{{move[:2]}}');
+    blueSquare('{{move[2:]}}');
+% end
+}
+highlightLastMove();
+
 var removeGreySquares = function() {
   $('#board .square-55d63').css('background', '');
+  highlightLastMove();
 };
 
 var greySquare = function(square) {
