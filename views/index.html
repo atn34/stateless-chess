@@ -1,36 +1,27 @@
 % def content():
+<h3>Start a Game</h3>
 <form class="form-horizontal" role="form" method="post" action="/start">
 <div class="form-group">
     <label for="email" class="col-sm-2 control-label">White</label>
-    <div class="col-sm-10">
-        <input type="email" class="form-control" name="white" placeholder="example@domain.com" value="">
-    </div>
+    <input type="email" class="form-control" name="white" placeholder="example@domain.com" value="">
 </div><div class="form-group">
     <label for="email" class="col-sm-2 control-label">Black</label>
-    <div class="col-sm-10">
-        <input type="email" class="form-control" name="black" placeholder="example@domain.com" value="">
-    </div>
+    <input type="email" class="form-control" name="black" placeholder="example@domain.com" value="">
 </div>
 <div class="form-group">
-    <div class="col-sm-10 col-sm-offset-2">
-        <input id="submit" name="submit" type="submit" value="Start a chess game!" class="btn btn-primary">
-    </div>
+    <input id="submit" name="submit" type="submit" value="Start a chess game!" class="btn btn-primary">
 </div>
 </form>
 
 <br/>
 
+<h3>View Dashboard</h3>
 <form class="form-horizontal" role="form" method="post" action="/dashboard">
 <div class="form-group">
-    <label for="email" class="col-sm-2 control-label">Email</label>
-    <div class="col-sm-10">
-        <input type="email" class="form-control" name="email" placeholder="example@domain.com" value="">
-    </div>
+    <input type="email" class="form-control" name="email" placeholder="example@domain.com" value="">
 </div>
 <div class="form-group">
-    <div class="col-sm-10 col-sm-offset-2">
-        <input id="submit" name="submit" type="submit" value="View active games" class="btn btn-primary">
-    </div>
+    <input id="submit" name="submit" type="submit" value="View active games dashboard" class="btn btn-primary">
 </div>
 </form>
 
