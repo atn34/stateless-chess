@@ -1,0 +1,7 @@
+
+td > a {
+    /* Make entire table element clickable */
+    display:block;
+    width:100%;
+    height:100%; 
+}
