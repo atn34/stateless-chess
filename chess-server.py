@@ -103,9 +103,13 @@ def dashboard(db, email):
 
 def mail_token(game, side, first=False):
     start_url = mint_game_url(game)
+    if first:
+        message = "You're in a game of stateless chess!"
+    else:
+        message = "It's your turn!"
     if side == 'white':
         q.enqueue(sendemail.send_from_statelesschess, game.white,
-                  "You're in a game of stateless chess!",
+                  message,
                   bottle.template('email.txt', dict(opponent=game.black,
                                                     first=first,
                                                     start_url=start_url,
@@ -113,7 +117,7 @@ def mail_token(game, side, first=False):
                                                     token=trusted_digest(game.uuid, 'white'))))
     elif side == 'black':
         q.enqueue(sendemail.send_from_statelesschess, game.black,
-                  "You're in a game of stateless chess!",
+                  message,
                   bottle.template('email.txt', dict(opponent=game.white,
                                                     first=first,
                                                     start_url=start_url,
@@ -127,7 +131,6 @@ def mail_token(game, side, first=False):
 def mail_tokens_handler(db, side, game_id):
     game = db.query(Game).get(game_id)
     mail_token(game, side)
-    bottle.redirect('/static/html/sent.html')
 
 
 @app.post('/start')
@@ -193,7 +196,7 @@ def move(db, game_id, move=None):
     db.add(game)
     db.flush()
     if game.move_count == 1:
-        mail_token(game, 'black')
+        mail_token(game, 'black', first=True)
     return dict(new_url=new_url)
 
 

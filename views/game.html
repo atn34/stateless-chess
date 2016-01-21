@@ -7,10 +7,7 @@ black: {{game.black}}
 Copy url to clipboard
 </button>
 % whose_turn = white if board.turn else black
-% side = 'white' if board.turn else 'black'
-<form method="post" action="/mail-token/{{side}}/{{game.id}}" style="margin-bottom: 5px">
-    <input id="submit" name="submit" type="submit" value="Email {{whose_turn}}" class="btn btn-primary btn-block">
-</form>
+<a href="javascript:sendMail();" style="margin-bottom: 5px" class="btn btn-primary btn-block">Email {{whose_turn}}</a>
 <div class="form-horizontal">
     <div class="form-group">
         <label class="col-sm-2 control-label">Token</label>
@@ -59,6 +56,18 @@ if (storedToken) {
 % else:
 document.getElementById("token").value = '{{token_value}}';
 % end
+
+% side = 'white' if board.turn else 'black'
+var sendMail = function() {
+    $.ajax({
+        type: "POST",
+        url: "/mail-token/{{side}}/{{game.id}}",
+        success: function(data) {},
+        error: function (xhr, ajaxOptions, thrownError) {
+            alert(thrownError);
+        }
+    });
+};
 
 
 var doMove = function(moveUrl) {
