@@ -1,5 +1,15 @@
+from rq import Connection
+from rq import Queue
+from rq import Worker
 import os
+import redis
 import smtplib
+
+listen = ['high', 'default', 'low']
+
+redis_url = os.getenv('REDISTOGO_URL', 'redis://localhost:6379')
+
+conn = redis.from_url(redis_url)
 
 def send_email(user, pwd, recipient, subject, body):
     gmail_user = user
@@ -26,3 +36,9 @@ def send_from_statelesschess(recipient, subject, body):
                recipient,
                subject,
                body)
+
+if __name__ == '__main__':
+    with Connection(conn):
+        worker = Worker(map(Queue, listen))
+        worker.work()
+

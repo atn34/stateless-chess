@@ -5,17 +5,18 @@ Usage: chess-server.py [--port PORT] [--secret SECRET]
 --secret SECRET  [default: secret]
 """
 
+from rq import Queue
 from sqlalchemy import and_
-from sqlalchemy import or_
 from sqlalchemy import desc
+from sqlalchemy import or_
 import bottle
 import chess
 import hashlib
 import hmac
+import sendemail
 import urllib
 import uuid
 
-import sendemail
 import models
 
 app = bottle.Bottle()
@@ -25,6 +26,8 @@ Game = models.Game
 app.install(sql_plugin)
 
 secret = 'secret'
+
+q = Queue(connection=sendemail.conn)
 
 
 def compressed_available(path):
@@ -86,16 +89,16 @@ def dashboard(db):
 @bottle.view('dashboard.html')
 def dashboard(db, email):
     games = db.query(Game).filter(Game.active == True,
-                or_(and_(Game.white == email, Game.turn == True),
-                    and_(Game.black == email, Game.turn == False))).all()
+                                  or_(and_(Game.white == email, Game.turn == True),
+                                      and_(Game.black == email, Game.turn == False))).all()
     opponent_games = db.query(Game).filter(Game.active == True,
-                or_(and_(Game.white == email, Game.turn == False),
-                    and_(Game.black == email, Game.turn == True))).all()
+                                           or_(and_(Game.white == email, Game.turn == False),
+                                               and_(Game.black == email, Game.turn == True))).all()
     return dict(
-            email=email,
-            games=games,
-            opponent_games=opponent_games,
-            )
+        email=email,
+        games=games,
+        opponent_games=opponent_games,
+    )
 
 
 @app.post('/start')
@@ -107,12 +110,12 @@ def start(db):
     db.flush()
     db.refresh(game)
     start_url = mint_game_url(game)
-    sendemail.send_from_statelesschess(white,
-                                       "You're in a game of stateless chess!",
-                                       bottle.template('email.txt', dict(opponent=black,
-                                                                         start_url=start_url,
-                                                                         side='white',
-                                                                         token=trusted_digest(game.uuid, 'white'))))
+    q.enqueue(sendemail.send_from_statelesschess, white,
+              "You're in a game of stateless chess!",
+              bottle.template('email.txt', dict(opponent=black,
+                                                start_url=start_url,
+                                                side='white',
+                                                token=trusted_digest(game.uuid, 'white'))))
     bottle.redirect('/static/html/sent.html')
 
 
@@ -167,12 +170,12 @@ def move(db, game_id, move=None):
     db.add(game)
     db.flush()
     if game.move_count == 1:
-        sendemail.send_from_statelesschess(game.black,
-                                           "You're in a game of stateless chess!",
-                                           bottle.template('email.txt', dict(opponent=game.white,
-                                                                             side='black',
-                                                                             start_url=new_url,
-                                                                             token=trusted_digest(game.uuid, 'black'))))
+        q.enqueue(sendemail.send_from_statelesschess, game.black,
+                  "You're in a game of stateless chess!",
+                  bottle.template('email.txt', dict(opponent=game.white,
+                                                    side='black',
+                                                    start_url=new_url,
+                                                    token=trusted_digest(game.uuid, 'black'))))
     return dict(new_url=new_url)
 
 
