@@ -101,12 +101,13 @@ def dashboard(db, email):
     )
 
 
-def mail_token(game, side):
+def mail_token(game, side, first=False):
     start_url = mint_game_url(game)
     if side == 'white':
         q.enqueue(sendemail.send_from_statelesschess, game.white,
                   "You're in a game of stateless chess!",
                   bottle.template('email.txt', dict(opponent=game.black,
+                                                    first=first,
                                                     start_url=start_url,
                                                     side='white',
                                                     token=trusted_digest(game.uuid, 'white'))))
@@ -114,6 +115,7 @@ def mail_token(game, side):
         q.enqueue(sendemail.send_from_statelesschess, game.black,
                   "You're in a game of stateless chess!",
                   bottle.template('email.txt', dict(opponent=game.white,
+                                                    first=first,
                                                     start_url=start_url,
                                                     side='black',
                                                     token=trusted_digest(game.uuid, 'black'))))
@@ -136,7 +138,7 @@ def start(db):
     db.add(game)
     db.flush()
     db.refresh(game)
-    mail_token(game, 'white')
+    mail_token(game, 'white', first=True)
     bottle.redirect('/static/html/sent.html')
 
 
