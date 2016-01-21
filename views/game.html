@@ -6,6 +6,7 @@ black: {{game.black}}
 <button class="btn btn-primary btn-block" style="margin-bottom: 5px" data-clipboard-text="{{current_url}}">
 Copy url to clipboard
 </button>
+% if game.active:
 % whose_turn = white if board.turn else black
 <a href="javascript:sendMail();" style="margin-bottom: 5px" class="btn btn-primary btn-block">Email {{whose_turn}}</a>
 <div id="email-sent" style="visibility: hidden" class="alert alert-success">
@@ -19,7 +20,6 @@ Copy url to clipboard
         </div>
     </div>
 </div>
-% if game.active:
 <p>
 % if board.turn:
 White ({{white}})
