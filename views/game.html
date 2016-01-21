@@ -8,6 +8,9 @@ Copy url to clipboard
 </button>
 % whose_turn = white if board.turn else black
 <a href="javascript:sendMail();" style="margin-bottom: 5px" class="btn btn-primary btn-block">Email {{whose_turn}}</a>
+<div id="email-sent" style="visibility: hidden" class="alert alert-success">
+  Email sent.
+</div>
 <div class="form-horizontal">
     <div class="form-group">
         <label class="col-sm-2 control-label">Token</label>
@@ -62,7 +65,9 @@ var sendMail = function() {
     $.ajax({
         type: "POST",
         url: "/mail-token/{{side}}/{{game.id}}",
-        success: function(data) {},
+        success: function(data) {
+            document.getElementById("email-sent").style.visibility = 'visible';
+        },
         error: function (xhr, ajaxOptions, thrownError) {
             alert(thrownError);
         }
