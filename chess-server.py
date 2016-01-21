@@ -1,8 +1,7 @@
 """Chess server.
-Usage: chess-server.py [--debug] [--port PORT] [--secret SECRET]
+Usage: chess-server.py [--port PORT] [--secret SECRET]
 
 --port PORT      [default: 8080]
---debug
 --secret SECRET  [default: secret]
 """
 
@@ -205,10 +204,10 @@ if __name__ == '__main__':
     from docopt import docopt
     arguments = docopt(__doc__)
     secret = arguments['--secret']
-    if arguments['--debug']:
-        models.echo_db = True
-        app.run(host='localhost', debug=True, reloader=True,
-                port=int(arguments['--port']))
-    else:
-        from paste import httpserver
-        httpserver.serve(app, host='0.0.0.0', port=int(arguments['--port']))
+    port = int(arguments['--port'])
+    from gevent.pywsgi import WSGIServer
+    from geventwebsocket.handler import WebSocketHandler
+    from geventwebsocket import WebSocketError
+    server = WSGIServer(("0.0.0.0", port), app,
+                        handler_class=WebSocketHandler)
+    server.serve_forever()

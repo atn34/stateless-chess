@@ -3,9 +3,11 @@ bottle==0.12.9
 bottle-sqlalchemy==0.4.3
 docopt==0.6.2
 futures==3.0.3
+gevent==1.0.2
+gevent-websocket==0.9.5
+greenlet==0.4.9
 Mako==1.0.3
 MarkupSafe==0.23
-Paste==2.0.2
 psycopg2==2.6.1
 python-chess==0.13.1
 python-editor==0.5
