@@ -101,6 +101,33 @@ def dashboard(db, email):
     )
 
 
+def mail_token(game, side):
+    start_url = mint_game_url(game)
+    if side == 'white':
+        q.enqueue(sendemail.send_from_statelesschess, game.white,
+                  "You're in a game of stateless chess!",
+                  bottle.template('email.txt', dict(opponent=game.black,
+                                                    start_url=start_url,
+                                                    side='white',
+                                                    token=trusted_digest(game.uuid, 'white'))))
+    elif side == 'black':
+        q.enqueue(sendemail.send_from_statelesschess, game.black,
+                  "You're in a game of stateless chess!",
+                  bottle.template('email.txt', dict(opponent=game.white,
+                                                    start_url=start_url,
+                                                    side='black',
+                                                    token=trusted_digest(game.uuid, 'black'))))
+    else:
+        raise ValueError("Expected side to be either 'black' or 'white'")
+
+
+@app.post('/mail-token/<side>/<game_id:int>')
+def mail_tokens_handler(db, side, game_id):
+    game = db.query(Game).get(game_id)
+    mail_token(game, side)
+    bottle.redirect('/static/html/sent.html')
+
+
 @app.post('/start')
 def start(db):
     white = bottle.request.forms.get('white')
@@ -109,13 +136,7 @@ def start(db):
     db.add(game)
     db.flush()
     db.refresh(game)
-    start_url = mint_game_url(game)
-    q.enqueue(sendemail.send_from_statelesschess, white,
-              "You're in a game of stateless chess!",
-              bottle.template('email.txt', dict(opponent=black,
-                                                start_url=start_url,
-                                                side='white',
-                                                token=trusted_digest(game.uuid, 'white'))))
+    mail_token(game, 'white')
     bottle.redirect('/static/html/sent.html')
 
 
@@ -170,12 +191,7 @@ def move(db, game_id, move=None):
     db.add(game)
     db.flush()
     if game.move_count == 1:
-        q.enqueue(sendemail.send_from_statelesschess, game.black,
-                  "You're in a game of stateless chess!",
-                  bottle.template('email.txt', dict(opponent=game.white,
-                                                    side='black',
-                                                    start_url=new_url,
-                                                    token=trusted_digest(game.uuid, 'black'))))
+        mail_token(game, 'black')
     return dict(new_url=new_url)
 
 
