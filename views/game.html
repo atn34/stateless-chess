@@ -7,12 +7,12 @@ black: <a href="/dashboard/{{urllib.quote(game.black)}}">{{game.black}}</a>
 <button class="btn btn-primary btn-block" style="margin-bottom: 5px" data-clipboard-text="{{current_url}}">
 Copy url to clipboard
 </button>
-% if game.active:
 % whose_turn = white if board.turn else black
 <a href="javascript:sendMail();" style="margin-bottom: 5px" class="btn btn-primary btn-block">Email {{whose_turn}}</a>
 <div id="email-sent" style="visibility: hidden" class="alert alert-success">
   Email sent.
 </div>
+% if game.active:
 <div class="form-horizontal">
     <div class="form-group">
         <label class="col-sm-2 control-label">Token</label>

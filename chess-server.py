@@ -103,7 +103,9 @@ def dashboard(db, email):
 
 def mail_token(game, side, first=False):
     start_url = mint_game_url(game)
-    if first:
+    if not game.active:
+        message = "Game Over"
+    elif first:
         message = "You're in a game of stateless chess!"
     else:
         message = "It's your turn!"
