@@ -38,10 +38,10 @@
     % board = chess.Board()
     % board.set_epd(game.epd)
     <tr>
-        <td><a href="/dashboard/{{urllib.quote(game.white)}}" target="_blank">{{game.white}}</a></td>
-        <td><a href="/dashboard/{{urllib.quote(game.black)}}" target="_blank">{{game.black}}</a></td>
+        <td><a href="/dashboard/{{urllib.quote(game.white)}}">{{game.white}}</a></td>
+        <td><a href="/dashboard/{{urllib.quote(game.black)}}">{{game.black}}</a></td>
         <td>{{board.result()}}</td>
-        <td><a href="/game/{{str(game.id)}}" target="_blank">{{game.id}}</a></td>
+        <td><a href="/game/{{str(game.id)}}">{{game.id}}</a></td>
     </tr>
     % end
 </table>

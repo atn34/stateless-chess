@@ -1,7 +1,8 @@
 % def content():
+% import urllib
 <div class="container" style="max-width: 500px">
-white: {{game.white}} <br/>
-black: {{game.black}}
+white: <a href="/dashboard/{{urllib.quote(game.white)}}">{{game.white}}</a> <br/>
+black: <a href="/dashboard/{{urllib.quote(game.black)}}">{{game.black}}</a>
 <div id="board" style="width: 100%; margin-bottom: 5px;"></div>
 <button class="btn btn-primary btn-block" style="margin-bottom: 5px" data-clipboard-text="{{current_url}}">
 Copy url to clipboard
@@ -22,9 +23,9 @@ Copy url to clipboard
 </div>
 <p>
 % if board.turn:
-White ({{white}})
+White (<a href="/dashboard/{{urllib.quote(game.white)}}">{{game.white}}</a>)
 % else:
-Black ({{black}})
+Black (<a href="/dashboard/{{urllib.quote(game.black)}}">{{game.black}}</a>)
 % end
 to move. Here are all legal moves. Click one, or drag pieces on the board.
 </p>
